@@ -25,6 +25,12 @@ contract CreditRegistry is ICreditRegistry {
 		}
 	}
 
+	modifier onlyRouter() {
+		if (msg.sender != router()) {
+			revert InvalidRouter();
+		}
+	}
+
 	function credit(address account, address asset) public view returns (uint256) {
 		return _lenders[account][asset].credit;
 	}
@@ -37,22 +43,56 @@ contract CreditRegistry is ICreditRegistry {
 		return _controllerAddress;
 	}
 
-	function push(bytes32 memory id, address asset) public onlyController {
+	function router() public view returns (address) {
+		return _routerAddress;
+	}
+
+	function attest(address asset, uint256 interest) public onlyRouter {
+		Market storage market = _markets[asset];
+
+		uint256 newWeight = market.weight + 1;
+		uint256 newInterestRate = market.interest + interest;
+		uint256 newInterestMod = newInterestRate % newWeight;
+
+		newInterestRate = newInterestRate - newInterestMod;
+
+		market.interest = newInterestRate / newWeight;
+		market.weight = newWeight;
+	}
+
+	function push(bytes32 id, address asset) public onlyController {
 		Sector storage sector = _sectors[id];
 
-		sector.index[asset] = sector.assets.length();
+		sector.index[asset] = sector.assets.length;
 		sector.assets.push(asset);
 	}
 
-	function pull(bytes32 memory id, address asset) public onlyController {
+	function pull(bytes32 id, address asset) public onlyController {
 		Sector storage sector = _sectors[id];
 
-		uint256 index = sectors.index[asset];
-		uint256 replacement = sector.assets[sectors.assets.length() - 1];
+		uint256 index = sector.index[asset];
+		address replacement = sector.assets[sector.assets.length - 1];
 
-		sectors.assets[index] = replacement;
-		sectors.index[asset] = index;
+		sector.assets[index] = replacement;
+		sector.index[asset] = index;
 		sector.assets.pop();
+ 	}
+
+ 	function sector(bytes32 id) public view returns (uint256) {
+ 		Sector storage sector = _sectors[id];
+
+ 		 uint256 sectorInterest;
+ 		 uint256 sectorSize = sector.assets.length;
+
+ 		for(uint256 x; x < sectorSize - 1; x++) { 
+ 			address consitutantAsset = sector.assets[x];
+ 			uint256 consitutantInterest = interest(consitutantAsset);
+ 			uint256 consitutantMod = consitutantInterest % (x + 1);
+
+ 			sectorInterest += consitutantInterest - consitutantMod;
+ 		}
+
+ 		return sectorInterest;
  	}
 
 }

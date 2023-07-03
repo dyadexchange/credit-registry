@@ -13,14 +13,17 @@ interface ICreditRegistry {
 		uint256 debt;
 		uint256 supply;
 		uint256 interest;
+		uint256 weight;
 	}
 
-	struct Sector 
+	struct Sector {
 		mapping(address => uint256) index;
 		address[] assets;
 		uint256 interest;
 	}
 
 	error InvalidController();
+
+	error InvalidRouter();
 
 }
