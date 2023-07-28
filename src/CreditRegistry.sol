@@ -6,7 +6,6 @@ contract CreditRegistry is ICreditRegistry {
 
     mapping(bytes32 => Sector) _sectors;
     mapping(address => Market) _markets;
-    mapping(address => bool) _whitelist;
     mapping(address => mapping(address => Entity)) _entities;
 
     address _routerAddress;
@@ -34,7 +33,6 @@ contract CreditRegistry is ICreditRegistry {
         _;
     }
 
-
     function controller() public view returns (address) {
         return _controllerAddress;
     }
@@ -52,7 +50,7 @@ contract CreditRegistry is ICreditRegistry {
     }
 
     function isWhitelisted(address asset) public view returns (bool) {
-        return _markets[asset].whitelised;
+        return _markets[asset].whitelisted;
     }
 
     function sector(bytes32 id) public view returns (uint256) {
@@ -61,22 +59,22 @@ contract CreditRegistry is ICreditRegistry {
          uint256 sectorInterest;
          uint256 sectorSize = sector.assets.length;
 
-        for(uint256 x; x < sectorSize - 1; x++) { 
+        for (uint256 x; x < sectorSize - 1; x++) { 
             address consitutantAsset = sector.assets[x];
             uint256 consitutantInterest = interest(consitutantAsset);
-            uint256 consitutantMod = consitutantInterest % (x + 1);
+            uint256 consitutantInterestMod = consitutantInterest % (x + 1);
 
-            sectorInterest += consitutantInterest - consitutantMod;
+            sectorInterest += consitutantInterest - consitutantInterestMod;
         }
 
-        return sectorInterest;
+        return sectorInterest / sectorSize;
     }
 
-        function constitutants(bytes32 id) public view returns (address[] memory) {
+    function constitutants(bytes32 id) public view returns (address[] memory) {
         return _sectors[id].assets;
     }
 
-        function recoup(address debtor, address asset) public view returns (uint256) {
+    function recoup(address debtor, address asset) public view returns (uint256) {
         return _entities[debtor][asset].recoup;
     }
 
@@ -92,32 +90,40 @@ contract CreditRegistry is ICreditRegistry {
         Market storage market = _markets[asset];
 
         uint256 newWeight = market.weight + 1;
-        uint256 newInterestRate = market.interest + interest;
-        uint256 newInterestMod = newInterestRate % newWeight;
+        uint256 newInterest = market.interest + interest;
+        uint256 deltaInterestMod = newInterest % newWeight;
+        uint256 deltaInterest = newInterest - deltaInterestMod / newWeight;
 
-        newInterestRate = newInterestRate - newInterestMod;
-
-        market.interest = newInterestRate / newWeight;
+        market.interest = deltaInterest;
         market.weight = newWeight;
     }
 
     function augment(address debtor, address asset, uint256 principal) public onlyRouter {
         Entity storage entity = _entities[asset][debtor];
 
-        entity.credit += 1; 
+        uint256 marketCriterion = criterion(asset);
+        uint256 deltaCreditMod = principal % marketCriterion;
+        uint256 deltaCredit = principal - deltaCreditMod * 1e18 / marketCriterion;
+
+        entity.credit += deltaCredit;
         entity.recoup += principal;
     }
 
     function slash(address debtor, address asset, uint256 principal) public onlyRouter {
         Entity storage entity = _entities[asset][debtor];
 
-        uint256 newRating = entity.credit > 0 ? entity.credit - 1 : 0;
+        uint256 marketCriterion = criterion(asset);
+        uint256 deltaCreditMod = principal % marketCriterion;
+        uint256 deltaCredit = principal - deltaCreditMod * 1e18 / marketCriterion;
 
-        entity.credit = newRating;
+        if (entity.credit >= deltaCredit) {
+            entity.credit -= deltaCredit;
+        }
+
         entity.debt += principal;
     }
 
-    function criteria(address asset, uint256 criterion) public onlyController {
+    function criterion(address asset, uint256 criterion) public onlyController {
         _markets[asset].criterion = criterion;
     }
 
@@ -140,10 +146,10 @@ contract CreditRegistry is ICreditRegistry {
     }
 
     function list(address asset) public onlyController {
-        _markets[asset].whitelised = true;
+        _markets[asset].whitelisted = true;
     }
 
     function delist(address asset) public onlyController {
-        _markets[asset].whitelised = false;
+        _markets[asset].whitelisted = false;
     }
 }
