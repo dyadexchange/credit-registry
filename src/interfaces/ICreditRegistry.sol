@@ -2,18 +2,17 @@ pragma solidity ^0.8.13;
 
 interface ICreditRegistry {
 	
-	struct Lender {
+	struct Entity {
 		uint256 credit;
-		uint256 repaid;
-		uint256 lent;
+		uint256 recoup;
 		uint256 debt;
 	}
 
 	struct Market {
-		uint256 debt;
-		uint256 supply;
-		uint256 interest;
 		uint256 weight;
+		uint256 interest;
+		uint256 criterion;
+		bool whitelisted;
 	}
 
 	struct Sector {
