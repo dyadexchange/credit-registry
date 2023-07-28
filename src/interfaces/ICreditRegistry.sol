@@ -16,13 +16,28 @@ interface ICreditRegistry {
     }
 
     struct Sector {
-        mapping(address => uint256) index;
         address[] assets;
-        uint256 interest;
+        mapping(address => uint256) index;
     }
 
     error InvalidController();
 
     error InvalidRouter();
+
+    event Whitelist(address indexed asset);
+
+    event Blacklist(address indexed assset);
+
+    event Augment(address indexed entity, uint256 credit);
+
+    event Slash(address indexed entity, uint256 credit);
+
+    event SectorListing(bytes32 indexed id, address asset);
+
+    event SectorDelisting(bytes32 indexed id, address asset);
+
+    event CriterionChange(address indexed asset, uint256 criterion);
+
+    event InterestChange(address indexed asset, uint256 interest);
 
 }

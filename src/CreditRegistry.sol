@@ -96,6 +96,8 @@ contract CreditRegistry is ICreditRegistry {
 
         market.interest = deltaInterest;
         market.weight = newWeight;
+
+        emit InterestChange(asset, deltaInterest);
     }
 
     function augment(address debtor, address asset, uint256 principal) public onlyRouter {
@@ -107,6 +109,8 @@ contract CreditRegistry is ICreditRegistry {
 
         entity.credit += deltaCredit;
         entity.recoup += principal;
+
+        emit Augment(debtor, entity.credit);
     }
 
     function slash(address debtor, address asset, uint256 principal) public onlyRouter {
@@ -121,10 +125,14 @@ contract CreditRegistry is ICreditRegistry {
         }
 
         entity.debt += principal;
+
+        emit Slash(debtor, entity.credit);
     }
 
     function criterion(address asset, uint256 criterion) public onlyController {
         _markets[asset].criterion = criterion;
+
+        emit CriterionChange(asset, criterion);
     }
 
     function push(bytes32 id, address asset) public onlyController {
@@ -132,6 +140,8 @@ contract CreditRegistry is ICreditRegistry {
 
         sector.index[asset] = sector.assets.length;
         sector.assets.push(asset);
+
+        emit SectorListing(id, asset);
     }
 
     function pull(bytes32 id, address asset) public onlyController {
@@ -143,13 +153,19 @@ contract CreditRegistry is ICreditRegistry {
         sector.assets[index] = replacement;
         sector.index[asset] = index;
         sector.assets.pop();
+
+        emit SectorDelisting(id, asset);
     }
 
-    function list(address asset) public onlyController {
+    function whitelist(address asset) public onlyController {
         _markets[asset].whitelisted = true;
+
+        emit Whitelist(asset);
     }
 
-    function delist(address asset) public onlyController {
+    function blacklist(address asset) public onlyController {
         _markets[asset].whitelisted = false;
+
+        emit Blacklist(asset);
     }
 }
