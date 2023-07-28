@@ -8,15 +8,15 @@ contract CreditRegistry is ICreditRegistry {
     mapping(address => Market) _markets;
     mapping(address => mapping(address => Entity)) _entities;
 
-    address _routerAddress;
-    address _controllerAddress;
+    address _router;
+    address _controller;
 
     constructor(
-        address routerAddress,
-        address controllerAddress
+        address router,
+        address controller
     ) {
-        _routerAddress = routerAddress;
-        _controllerAddress = controllerAddress;
+        _router = router;
+        _controller = controller;
     }
 
     modifier onlyController() {
@@ -34,11 +34,11 @@ contract CreditRegistry is ICreditRegistry {
     }
 
     function controller() public view returns (address) {
-        return _controllerAddress;
+        return _controller;
     }
 
     function router() public view returns (address) {
-        return _routerAddress;
+        return _router;
     }
 
     function interest(address asset) public view returns (uint256) {
@@ -129,6 +129,13 @@ contract CreditRegistry is ICreditRegistry {
         emit Slash(debtor, entity.credit);
     }
 
+    function configuration(address controller, address router) public onlyController {
+        _controller = controller; 
+        _router = router;
+
+        emit ConfigurationChange(controller, router);
+    }
+
     function criterion(address asset, uint256 criterion) public onlyController {
         _markets[asset].criterion = criterion;
 
@@ -168,4 +175,5 @@ contract CreditRegistry is ICreditRegistry {
 
         emit Blacklist(asset);
     }
+
 }
