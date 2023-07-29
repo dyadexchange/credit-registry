@@ -5,6 +5,7 @@ import { ICreditRegistry } from "@interfaces/ICreditRegistry.sol";
 
 contract CreditRegistry is ICreditRegistry {
 
+    mapping(address => bool) _whitelist;
     mapping(bytes32 => Sector) _sectors;
     mapping(address => mapping(Term => Market)) _markets;
     mapping(address => mapping(address => Entity)) _entities;
@@ -49,16 +50,16 @@ contract CreditRegistry is ICreditRegistry {
         return _controller;
     }
 
+    function isWhitelisted(address asset) public view returns (bool) {
+        return _whitelist[asset];
+    }
+
     function interest(address asset, Term duration) public view returns (uint256) {
         return _markets[asset][duration].interest;
     }
 
     function criterion(address asset, Term duration) public view returns (uint256) {
         return _markets[asset][duration].criterion;
-    }
-
-    function isWhitelisted(address asset, Term duration) public view returns (bool) {
-        return _markets[asset][duration].whitelisted;
     }
 
     function sector(bytes32 id) public view returns (uint256) {
@@ -69,6 +70,7 @@ contract CreditRegistry is ICreditRegistry {
 
         for (uint256 x; x < sectorSize - 1; x++) { 
             Term consitutantTerm = sector.durations[x];
+
             address consitutantAsset = sector.assets[x];
             uint256 consitutantInterest = interest(consitutantAsset, consitutantTerm);
             uint256 consitutantInterestMod = consitutantInterest % (x + 1);
@@ -186,14 +188,14 @@ contract CreditRegistry is ICreditRegistry {
         emit SectorDelisting(id, asset);
     }
 
-    function whitelist(address asset, Term duration) public onlyController {
-        _markets[asset][duration].whitelisted = true;
+    function whitelist(address asset) public onlyController {
+        _whitelist[asset] = true;
 
         emit Whitelist(asset);
     }
 
-    function blacklist(address asset, Term duration) public onlyController {
-        _markets[asset][duration].whitelisted = false;
+    function blacklist(address asset) public onlyController {
+        _whitelist[asset] = false;
 
         emit Blacklist(asset);
     }

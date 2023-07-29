@@ -14,7 +14,6 @@ interface ICreditRegistry {
         uint256 weight;
         uint256 interest;
         uint256 criterion;
-        bool whitelisted;
     }
 
     struct Sector {
