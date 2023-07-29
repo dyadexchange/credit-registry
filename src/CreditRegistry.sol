@@ -1,29 +1,26 @@
 pragma solidity ^0.8.13;
 
+import { ICreditOracle } from "@interfaces/ICreditOracle.sol";
 import { ICreditRegistry } from "@interfaces/ICreditRegistry.sol";
 
 contract CreditRegistry is ICreditRegistry {
 
     mapping(bytes32 => Sector) _sectors;
-    mapping(address => Market) _markets;
+    mapping(address => mapping(Term => Market)) _markets;
     mapping(address => mapping(address => Entity)) _entities;
 
     address _router;
+    address _oracle;
     address _controller;
 
     constructor(
         address router,
+        address oracle,
         address controller
     ) {
+        _oracle = oracle;
         _router = router;
         _controller = controller;
-    }
-
-    modifier onlyController() {
-        if (msg.sender != controller()) {
-            revert InvalidController();
-        }
-        _;
     }
 
     modifier onlyRouter() {
@@ -33,24 +30,35 @@ contract CreditRegistry is ICreditRegistry {
         _;
     }
 
-    function controller() public view returns (address) {
-        return _controller;
+    modifier onlyController() {
+        if (msg.sender != controller()) {
+            revert InvalidController();
+        }
+        _;
+    }
+
+    function oracle() public view returns (address) {
+        return _oracle;
     }
 
     function router() public view returns (address) {
         return _router;
     }
 
-    function interest(address asset) public view returns (uint256) {
-        return _markets[asset].interest;
+    function controller() public view returns (address) {
+        return _controller;
     }
 
-    function criterion(address asset) public view returns (uint256) {
-        return _markets[asset].criterion;
+    function interest(address asset, Term duration) public view returns (uint256) {
+        return _markets[asset][duration].interest;
     }
 
-    function isWhitelisted(address asset) public view returns (bool) {
-        return _markets[asset].whitelisted;
+    function criterion(address asset, Term duration) public view returns (uint256) {
+        return _markets[asset][duration].criterion;
+    }
+
+    function isWhitelisted(address asset, Term duration) public view returns (bool) {
+        return _markets[asset][duration].whitelisted;
     }
 
     function sector(bytes32 id) public view returns (uint256) {
@@ -60,8 +68,9 @@ contract CreditRegistry is ICreditRegistry {
          uint256 sectorSize = sector.assets.length;
 
         for (uint256 x; x < sectorSize - 1; x++) { 
+            Term consitutantTerm = sector.durations[x];
             address consitutantAsset = sector.assets[x];
-            uint256 consitutantInterest = interest(consitutantAsset);
+            uint256 consitutantInterest = interest(consitutantAsset, consitutantTerm);
             uint256 consitutantInterestMod = consitutantInterest % (x + 1);
 
             sectorInterest += consitutantInterest - consitutantInterestMod;
@@ -86,13 +95,15 @@ contract CreditRegistry is ICreditRegistry {
         return _entities[debtor][asset].credit;
     }
 
-    function attest(address asset, uint256 interest) public onlyRouter {
-        Market storage market = _markets[asset];
+    function attest(address asset, Term duration, uint256 interest) public onlyRouter {
+        Market storage market = _markets[asset][duration];
 
         uint256 newWeight = market.weight + 1;
         uint256 newInterest = market.interest + interest;
         uint256 deltaInterestMod = newInterest % newWeight;
         uint256 deltaInterest = newInterest - deltaInterestMod / newWeight;
+
+        ICreditOracle(oracle()).log(asset, duration, interest);
 
         market.interest = deltaInterest;
         market.weight = newWeight;
@@ -100,10 +111,15 @@ contract CreditRegistry is ICreditRegistry {
         emit InterestChange(asset, deltaInterest);
     }
 
-    function augment(address debtor, address asset, uint256 principal) public onlyRouter {
+    function augment(
+        address debtor, 
+        address asset, 
+        Term duration,
+        uint256 principal
+    ) public onlyRouter {
         Entity storage entity = _entities[asset][debtor];
 
-        uint256 marketCriterion = criterion(asset);
+        uint256 marketCriterion = criterion(asset, duration);
         uint256 deltaCreditMod = principal % marketCriterion;
         uint256 deltaCredit = principal - deltaCreditMod * 1e18 / marketCriterion;
 
@@ -113,10 +129,15 @@ contract CreditRegistry is ICreditRegistry {
         emit Augment(debtor, entity.credit);
     }
 
-    function slash(address debtor, address asset, uint256 principal) public onlyRouter {
+    function slash(
+        address debtor, 
+        address asset, 
+        Term duration,
+        uint256 principal
+    ) public onlyRouter {
         Entity storage entity = _entities[asset][debtor];
 
-        uint256 marketCriterion = criterion(asset);
+        uint256 marketCriterion = criterion(asset, duration);
         uint256 deltaCreditMod = principal % marketCriterion;
         uint256 deltaCredit = principal - deltaCreditMod * 1e18 / marketCriterion;
 
@@ -129,15 +150,16 @@ contract CreditRegistry is ICreditRegistry {
         emit Slash(debtor, entity.credit);
     }
 
-    function configuration(address controller, address router) public onlyController {
+    function configure(address controller, address router, address oracle) public onlyController {
         _controller = controller; 
         _router = router;
-
-        emit ConfigurationChange(controller, router);
+        _oracle = oracle;
+        
+        emit ConfigurationChange(controller, router, oracle);
     }
 
-    function criterion(address asset, uint256 criterion) public onlyController {
-        _markets[asset].criterion = criterion;
+    function criterion(address asset, Term duration, uint256 criterion) public onlyController {
+        _markets[asset][duration].criterion = criterion;
 
         emit CriterionChange(asset, criterion);
     }
@@ -164,14 +186,14 @@ contract CreditRegistry is ICreditRegistry {
         emit SectorDelisting(id, asset);
     }
 
-    function whitelist(address asset) public onlyController {
-        _markets[asset].whitelisted = true;
+    function whitelist(address asset, Term duration) public onlyController {
+        _markets[asset][duration].whitelisted = true;
 
         emit Whitelist(asset);
     }
 
-    function blacklist(address asset) public onlyController {
-        _markets[asset].whitelisted = false;
+    function blacklist(address asset, Term duration) public onlyController {
+        _markets[asset][duration].whitelisted = false;
 
         emit Blacklist(asset);
     }

@@ -2,6 +2,8 @@ pragma solidity ^0.8.13;
 
 interface ICreditRegistry {
     
+    enum Term { ONE_MONTHS, THREE_MONTHS, SIX_MONTHS, TWELVE_MONTHS }
+
     struct Entity {
         uint256 credit;
         uint256 recoup;
@@ -18,6 +20,7 @@ interface ICreditRegistry {
     struct Sector {
         address[] assets;
         mapping(address => uint256) index;
+        Term[] durations;
     }
 
     error InvalidController();
@@ -40,6 +43,6 @@ interface ICreditRegistry {
 
     event InterestChange(address indexed asset, uint256 interest);
 
-    event ConfigurationChange(address controller, address router);
+    event ConfigurationChange(address controller, address router, address oracle);
 
 }
