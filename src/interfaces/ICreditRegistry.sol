@@ -42,6 +42,6 @@ interface ICreditRegistry {
 
     event InterestChange(address indexed asset, uint256 interest);
 
-    event ConfigurationChange(address controller, address router, address oracle);
+    event ConfigurationChange(address previous, address current);
 
 }

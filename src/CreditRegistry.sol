@@ -129,8 +129,9 @@ contract CreditRegistry is ICreditRegistry {
         Entity storage entity = _entities[asset][debtor];
 
         uint256 marketCriterion = criterion(asset, duration);
-        uint256 deltaCreditMod = principal % marketCriterion;
-        uint256 deltaCredit = principal - deltaCreditMod * 1e18 / marketCriterion;
+        uint256 deltaPrincipalMod = principal % marketCriterion;
+        uint256 deltaPrincipal = principal - deltaPrincipalMod;
+        uint256 deltaCredit = deltaPrincipal * 1e18 / marketCriterion;
 
         entity.credit += deltaCredit;
         entity.recoup += principal;
@@ -150,8 +151,9 @@ contract CreditRegistry is ICreditRegistry {
         Entity storage entity = _entities[asset][debtor];
 
         uint256 marketCriterion = criterion(asset, duration);
-        uint256 deltaCreditMod = principal % marketCriterion;
-        uint256 deltaCredit = principal - deltaCreditMod * 1e18 / marketCriterion;
+        uint256 deltaPrincipalMod = principal % marketCriterion;
+        uint256 deltaPrincipal = principal - deltaPrincipalMod;
+        uint256 deltaCredit = deltaPrincipal * 1e18 / marketCriterion;
 
         if (entity.credit >= deltaCredit) {
             entity.credit -= deltaCredit;
@@ -162,24 +164,37 @@ contract CreditRegistry is ICreditRegistry {
         emit Slash(debtor, entity.credit);
     }
 
-    function configure(address controller, address router, address oracle) 
-        public 
-        onlyController 
-    {
-        _router = router;
-        _controller = controller; 
-        _oracle = ICreditOracle(oracle);
-        
-        emit ConfigurationChange(controller, router, oracle);
-    }
-
-    function criterion(address asset, Term duration, uint256 criterion) 
+    function configureCriterion(address asset, Term duration, uint256 criterion) 
         public 
         onlyController 
     {
         _markets[asset][duration].criterion = criterion;
 
         emit CriterionChange(asset, criterion);
+    }
+
+    function configureController(address controller) public onlyController {
+        address previous = _controller;
+
+        _controller = controller;
+        
+        emit ConfigurationChange(previous, controller);
+    }
+
+    function configureRouter(address router) public onlyController {
+        address previous = _router;
+
+        _router = router;
+        
+        emit ConfigurationChange(previous, router);
+    }
+
+    function configureOracle(address oracle) public onlyController {
+        address previous = address(_oracle);
+
+        _oracle = ICreditOracle(oracle);
+        
+        emit ConfigurationChange(previous, oracle);
     }
 
     function push(bytes32 id, address asset) public onlyController {
