@@ -11,17 +11,18 @@ contract CreditRegistry is ICreditRegistry {
     mapping(address => mapping(address => Entity)) _entities;
 
     address _router;
-    address _oracle;
     address _controller;
+
+    ICreditOracle _oracle;
 
     constructor(
         address router,
         address oracle,
         address controller
     ) {
-        _oracle = oracle;
         _router = router;
         _controller = controller;
+        _oracle = ICreditOracle(oracle);
     }
 
     modifier onlyRouter() {
@@ -38,16 +39,16 @@ contract CreditRegistry is ICreditRegistry {
         _;
     }
 
-    function oracle() public view returns (address) {
-        return _oracle;
-    }
-
     function router() public view returns (address) {
         return _router;
     }
 
     function controller() public view returns (address) {
         return _controller;
+    }
+
+    function oracle() public view returns (ICreditOracle) {
+        return _oracle;
     }
 
     function isWhitelisted(address asset) public view returns (bool) {
@@ -97,7 +98,10 @@ contract CreditRegistry is ICreditRegistry {
         return _entities[debtor][asset].credit;
     }
 
-    function attest(address asset, Term duration, uint256 interest) public onlyRouter {
+    function attest(address asset, Term duration, uint256 interest) 
+        public 
+        onlyRouter 
+    {
         Market storage market = _markets[asset][duration];
 
         uint256 newWeight = market.weight + 1;
@@ -105,7 +109,7 @@ contract CreditRegistry is ICreditRegistry {
         uint256 deltaInterestMod = newInterest % newWeight;
         uint256 deltaInterest = newInterest - deltaInterestMod / newWeight;
 
-        ICreditOracle(oracle()).log(asset, duration, interest);
+        oracle().log(asset, duration, interest);
 
         market.interest = deltaInterest;
         market.weight = newWeight;
@@ -118,7 +122,10 @@ contract CreditRegistry is ICreditRegistry {
         address asset, 
         Term duration,
         uint256 principal
-    ) public onlyRouter {
+    ) 
+        public 
+        onlyRouter 
+    {
         Entity storage entity = _entities[asset][debtor];
 
         uint256 marketCriterion = criterion(asset, duration);
@@ -136,7 +143,10 @@ contract CreditRegistry is ICreditRegistry {
         address asset, 
         Term duration,
         uint256 principal
-    ) public onlyRouter {
+    ) 
+        public 
+        onlyRouter 
+    {
         Entity storage entity = _entities[asset][debtor];
 
         uint256 marketCriterion = criterion(asset, duration);
@@ -152,15 +162,21 @@ contract CreditRegistry is ICreditRegistry {
         emit Slash(debtor, entity.credit);
     }
 
-    function configure(address controller, address router, address oracle) public onlyController {
-        _controller = controller; 
+    function configure(address controller, address router, address oracle) 
+        public 
+        onlyController 
+    {
         _router = router;
-        _oracle = oracle;
+        _controller = controller; 
+        _oracle = ICreditOracle(oracle);
         
         emit ConfigurationChange(controller, router, oracle);
     }
 
-    function criterion(address asset, Term duration, uint256 criterion) public onlyController {
+    function criterion(address asset, Term duration, uint256 criterion) 
+        public 
+        onlyController 
+    {
         _markets[asset][duration].criterion = criterion;
 
         emit CriterionChange(asset, criterion);
