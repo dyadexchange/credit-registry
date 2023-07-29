@@ -66,23 +66,19 @@ contract CreditRegistry is ICreditRegistry {
     function sector(bytes32 id) public view returns (uint256) {
         Sector storage sector = _sectors[id];
 
-         uint256 sectorInterest;
-         uint256 sectorSize = sector.assets.length;
+        uint256 sectorInterest;
+        uint256 sectorSize = sector.assets.length;
 
         for (uint256 x; x < sectorSize - 1; x++) { 
-            Term consitutantTerm = sector.durations[x];
-
-            address consitutantAsset = sector.assets[x];
-            uint256 consitutantInterest = interest(consitutantAsset, consitutantTerm);
-            uint256 consitutantInterestMod = consitutantInterest % (x + 1);
-
-            sectorInterest += consitutantInterest - consitutantInterestMod;
+            sectorInterest += interest(sector.assets[x], sector.durations[x]);
         }
+
+        sectorInterest -= sectorInterest % sectorSize;
 
         return sectorInterest / sectorSize;
     }
 
-    function constitutants(bytes32 id) public view returns (address[] memory) {
+    function constituents(bytes32 id) public view returns (address[] memory) {
         return _sectors[id].assets;
     }
 
