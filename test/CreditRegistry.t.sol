@@ -23,6 +23,20 @@ contract CreditRegistryTest is Test {
         _whitelist_asset(MARKET_ADDRESS);
     }
 
+    function testAttestation() public {
+        /*  -------- ROUTER -------- */
+        vm.startPrank(ROUTER_ADDRESS);
+            registry.attest(MARKET_ADDRESS, term, uint256(1000 gwei));
+            registry.attest(MARKET_ADDRESS, term, uint256(1002 gwei));
+            registry.attest(MARKET_ADDRESS, term, uint256(1002 gwei));
+        vm.stopPrank();
+        /*  ------------------------ */
+
+        uint256 marketInterest = registry.interest(MARKET_ADDRESS, term);
+
+        require(marketInterest == 1001500000000);
+    }
+
 	function _whitelist_asset(address asset) internal {
         /*  ------ CONTROLLER ------ */
 		vm.startPrank(CONTROLLER_ADDRESS);
