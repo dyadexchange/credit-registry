@@ -124,12 +124,12 @@ contract CreditRegistry is ICreditRegistry {
         public 
         onlyRouter 
     {
-        Entity storage entity = _entities[asset][debtor];
+        Entity storage entity = _entities[debtor][asset];
 
         uint256 marketCriterion = criterion(asset, duration);
         uint256 deltaPrincipalMod = principal % marketCriterion;
         uint256 deltaPrincipal = principal - deltaPrincipalMod;
-        uint256 deltaCredit = deltaPrincipal * 1e18 / marketCriterion;
+        uint256 deltaCredit = deltaPrincipal / marketCriterion;
 
         entity.credit += deltaCredit;
         entity.recoup += principal;
@@ -146,12 +146,12 @@ contract CreditRegistry is ICreditRegistry {
         public 
         onlyRouter 
     {
-        Entity storage entity = _entities[asset][debtor];
+        Entity storage entity = _entities[debtor][asset];
 
         uint256 marketCriterion = criterion(asset, duration);
         uint256 deltaPrincipalMod = principal % marketCriterion;
         uint256 deltaPrincipal = principal - deltaPrincipalMod;
-        uint256 deltaCredit = deltaPrincipal * 1e18 / marketCriterion;
+        uint256 deltaCredit = deltaPrincipal / marketCriterion;
 
         if (entity.credit >= deltaCredit) {
             entity.credit -= deltaCredit;
