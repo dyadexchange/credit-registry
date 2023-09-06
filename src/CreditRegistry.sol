@@ -100,15 +100,17 @@ contract CreditRegistry is ICreditRegistry {
     {
         Market storage market = _markets[asset][duration];
 
-        uint256 newWeight = market.weight + 1;
-        uint256 newInterest = market.interest + interest;
-        uint256 deltaInterestMod = newInterest % newWeight;
-        uint256 deltaInterest = newInterest - deltaInterestMod / newWeight;
+        uint256 deltaWeight = market.weight + 1;
+        uint256 culmInterest = market.interest + interest;
+
+        uint256 w = deltaWeight > 2 ? 2 : deltaWeight;
+
+        uint256 deltaInterest = culmInterest / w;
 
         oracle().log(asset, duration, interest);
 
         market.interest = deltaInterest;
-        market.weight = newWeight;
+        market.weight = deltaWeight;
 
         emit InterestChange(asset, deltaInterest);
     }
