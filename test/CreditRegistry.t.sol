@@ -24,18 +24,42 @@ contract CreditRegistryTest is Test {
         _whitelist(MARKET_ADDRESS);
     }
 
-    function testAttestation() public {
-        /*  -------- ROUTER -------- */
-        vm.startPrank(ROUTER_ADDRESS);
-            registry.attest(MARKET_ADDRESS, term, uint256(1000 gwei));
-            registry.attest(MARKET_ADDRESS, term, uint256(1002 gwei));
-            registry.attest(MARKET_ADDRESS, term, uint256(1002 gwei));
-        vm.stopPrank();
-        /*  ------------------------ */
+    function testWhitelisting() public {
+        _whitelist(MARKET_ADDRESS);
 
-        uint256 marketInterest = registry.interest(MARKET_ADDRESS, term);
+        bool isWhitelisted = registry.isWhitelisted(MARKET_ADDRESS, term);
 
-        require(marketInterest == 1001500000000);
+        _blacklist(MARKET_ADDRESS);
+
+        bool isBlacklisted = !registry.isWhitelisted(MARKET_ADDRESS, term);
+
+        require(isWhitelisted && isBlacklisted);
+    }
+
+    function testSectorListing() public {
+        bytes32 sectorId = keccak256(".");
+
+        _push(sectorId, MARKET_ADDRESS);
+
+        address[] memory constituents = registry.constituents(sectorId);
+
+        bool isConstituent;
+
+        for (uint256 x = 0; x < constituents.length; x++) {
+            if (constituents[x] == MARKET_ADDRESS) isConstituent = true;
+        }
+
+        _pull(sectorId, MARKET_ADDRESS);
+
+        constituents = registry.constituents(sectorId);
+
+        bool isNotConstituent = true;
+
+        for (uint256 x = 0; x < constituents.length; x++) {
+            if (constituents[x] == MARKET_ADDRESS) isNotConstituent = false;
+        }
+
+        require(isConstituent && isNotConstituent);
     }
 
     function testAugmentationAndSlash() public {
@@ -62,37 +86,12 @@ contract CreditRegistryTest is Test {
         require(preCredit == 3 && postCredit == 2);
     }
 
-    function testSectorListing() public {
-        bytes32 sectorId = keccak256(".");
-
-        _push(sectorId, MARKET_ADDRESS);
-
-        address[] memory constituents = registry.constituents(sectorId);
-
-        bool isConstituent;
-
-        for (uint256 x = 0; x < constituents.length; x++) {
-            if (constituents[x] == MARKET_ADDRESS) isConstituent = true;
-        }
-
-        require(isConstituent);
-
-        _pull(sectorId, MARKET_ADDRESS);
-
-        constituents = registry.constituents(sectorId);
-        isConstituent = false;
-
-        for (uint256 x = 0; x < constituents.length; x++) {
-            if (constituents[x] == MARKET_ADDRESS) isConstituent = true;
-        }
-
-        require(!isConstituent);
-    }
+    function testAttestation() public { }
 
     function _whitelist(address asset) internal {
         /*  ------ CONTROLLER ------ */
         vm.startPrank(CONTROLLER_ADDRESS);
-            registry.whitelist(asset);
+            registry.whitelist(asset, term);
         vm.stopPrank();
         /*  ------------------------ */
     }
@@ -100,7 +99,7 @@ contract CreditRegistryTest is Test {
     function _blacklist(address asset) internal {
         /*  ------ CONTROLLER ------ */
         vm.startPrank(CONTROLLER_ADDRESS);
-            registry.blacklist(asset);
+            registry.blacklist(asset, term);
         vm.stopPrank();
         /*  ------------------------ */ 
     }

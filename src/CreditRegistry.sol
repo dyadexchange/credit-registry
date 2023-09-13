@@ -5,7 +5,6 @@ import { ICreditRegistry } from "@interfaces/ICreditRegistry.sol";
 
 contract CreditRegistry is ICreditRegistry {
 
-    mapping(address => bool) _whitelist;
     mapping(bytes32 => Sector) _sectors;
     mapping(address => mapping(Term => Market)) _markets;
     mapping(address => mapping(address => Entity)) _entities;
@@ -51,31 +50,12 @@ contract CreditRegistry is ICreditRegistry {
         return _oracle;
     }
 
-    function isWhitelisted(address asset) public view returns (bool) {
-        return _whitelist[asset];
-    }
-
-    function interest(address asset, Term duration) public view returns (uint256) {
-        return _markets[asset][duration].interest;
+    function isWhitelisted(address asset, Term duration) public view returns (bool) {
+        return _markets[asset][duration].whitelist;
     }
 
     function criterion(address asset, Term duration) public view returns (uint256) {
         return _markets[asset][duration].criterion;
-    }
-
-    function sector(bytes32 id) public view returns (uint256) {
-        Sector storage sector = _sectors[id];
-
-        uint256 sectorInterest;
-        uint256 sectorSize = sector.assets.length;
-
-        for (uint256 x; x < sectorSize - 1; x++) { 
-            sectorInterest += interest(sector.assets[x], sector.durations[x]);
-        }
-
-        sectorInterest -= sectorInterest % sectorSize;
-
-        return sectorInterest / sectorSize;
     }
 
     function constituents(bytes32 id) public view returns (address[] memory) {
@@ -98,21 +78,7 @@ contract CreditRegistry is ICreditRegistry {
         public 
         onlyRouter 
     {
-        Market storage market = _markets[asset][duration];
-
-        uint256 deltaWeight = market.weight + 1;
-        uint256 culmInterest = market.interest + interest;
-
-        uint256 w = deltaWeight > 2 ? 2 : deltaWeight;
-
-        uint256 deltaInterest = culmInterest / w;
-
         oracle().log(asset, duration, interest);
-
-        market.interest = deltaInterest;
-        market.weight = deltaWeight;
-
-        emit InterestChange(asset, deltaInterest);
     }
 
     function augment(
@@ -217,14 +183,14 @@ contract CreditRegistry is ICreditRegistry {
         emit SectorDelisting(id, asset);
     }
 
-    function whitelist(address asset) public onlyController {
-        _whitelist[asset] = true;
+    function whitelist(address asset, Term duration) public onlyController {
+        _markets[asset][duration].whitelist = true;
 
         emit Whitelist(asset);
     }
 
-    function blacklist(address asset) public onlyController {
-        _whitelist[asset] = false;
+    function blacklist(address asset, Term duration) public onlyController {
+        _markets[asset][duration].whitelist = false;
 
         emit Blacklist(asset);
     }

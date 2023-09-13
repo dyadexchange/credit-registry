@@ -11,8 +11,7 @@ interface ICreditRegistry {
     }
 
     struct Market {
-        uint256 weight;
-        uint256 interest;
+        bool whitelist;
         uint256 criterion;
     }
 
@@ -39,8 +38,6 @@ interface ICreditRegistry {
     event SectorDelisting(bytes32 indexed id, address asset);
 
     event CriterionChange(address indexed asset, uint256 criterion);
-
-    event InterestChange(address indexed asset, uint256 interest);
 
     event ConfigurationChange(address previous, address current);
 
