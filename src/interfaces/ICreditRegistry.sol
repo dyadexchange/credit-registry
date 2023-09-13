@@ -6,8 +6,8 @@ interface ICreditRegistry {
 
     struct Entity {
         uint256 credit;
-        uint256 recoup;
-        uint256 debt;
+        uint256 recouped;
+        uint256 defaulted;
     }
 
     struct Market {

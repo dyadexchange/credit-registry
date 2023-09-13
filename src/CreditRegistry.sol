@@ -62,12 +62,12 @@ contract CreditRegistry is ICreditRegistry {
         return _sectors[id].assets;
     }
 
-    function recoup(address debtor, address asset) public view returns (uint256) {
-        return _entities[debtor][asset].recoup;
+    function recouped(address debtor, address asset) public view returns (uint256) {
+        return _entities[debtor][asset].recouped;
     }
 
-    function debt(address debtor, address asset) public view returns (uint256) {
-        return _entities[debtor][asset].debt;
+    function defaulted(address debtor, address asset) public view returns (uint256) {
+        return _entities[debtor][asset].defaulted;
     }
 
     function credit(address debtor, address asset) public view returns (uint256) {
@@ -98,7 +98,7 @@ contract CreditRegistry is ICreditRegistry {
         uint256 deltaCredit = deltaPrincipal / marketCriterion;
 
         entity.credit += deltaCredit;
-        entity.recoup += principal;
+        entity.recouped += principal;
 
         emit Augment(debtor, entity.credit);
     }
@@ -123,7 +123,7 @@ contract CreditRegistry is ICreditRegistry {
             entity.credit -= deltaCredit;
         }
 
-        entity.debt += principal;
+        entity.defaulted += principal;
 
         emit Slash(debtor, entity.credit);
     }
