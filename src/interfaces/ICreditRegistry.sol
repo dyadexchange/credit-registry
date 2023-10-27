@@ -1,9 +1,9 @@
 pragma solidity ^0.8.13;
 
-interface ICreditRegistry {
-    
-    enum Term { ONE_MONTHS, THREE_MONTHS, SIX_MONTHS, TWELVE_MONTHS }
+import "@interfaces/IDomainObjects.sol";
 
+interface ICreditRegistry is IDomainObjects {
+    
     struct Entity {
         uint256 credit;
         uint256 recouped;

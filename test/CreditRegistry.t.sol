@@ -2,12 +2,12 @@ pragma solidity 0.8.15;
 
 import { Test } from '@forge-std/Test.sol';
 import { CreditRegistry } from '@core/CreditRegistry.sol';
-import { ICreditRegistry } from '@interfaces/ICreditRegistry.sol';
+import { IDomainObjects } from '@interfaces/IDomainObjects.sol';
 
 contract CreditRegistryTest is Test {
 
     CreditRegistry registry;
-    ICreditRegistry.Term term;
+    IDomainObjects.Term term;
 
     address DEBTOR_ADDRESS = msg.sender;
     address CONTROLLER_ADDRESS = 0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5;
@@ -16,8 +16,8 @@ contract CreditRegistryTest is Test {
     address ROUTER_ADDRESS = 0xC4356aF40cc379b15925Fc8C21e52c00F474e8e9;
 
     function setUp() public {
+        term = IDomainObjects.Term.ONE_MONTHS;
         registry = new CreditRegistry(ROUTER_ADDRESS, ORACLE_ADDRESS, CONTROLLER_ADDRESS);
-        term = ICreditRegistry.Term.ONE_MONTHS;
     }
 
     function testOwnership() public {

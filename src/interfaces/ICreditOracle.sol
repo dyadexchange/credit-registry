@@ -1,8 +1,8 @@
 pragma solidity ^0.8.13;
 
-import { ICreditRegistry } from '@interfaces/ICreditRegistry.sol';
+import "@interfaces/IDomainObjects.sol";
 
-interface ICreditOracle is ICreditRegistry {
+interface ICreditOracle is IDomainObjects {
     
     function log(address asset, Term duration, uint256 interest) external;
 
