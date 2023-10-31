@@ -40,4 +40,12 @@ interface ICreditRegistry is IDomainObjects {
 
     event ConfigurationChange(address previous, address current);
 
+    event Attestation(
+        address debtor, 
+        address asset, 
+        Term duration, 
+        uint256 principal, 
+        bool hasDefaulted
+    );
+    
 }

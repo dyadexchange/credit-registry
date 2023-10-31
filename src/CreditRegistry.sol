@@ -101,6 +101,8 @@ contract CreditRegistry is ICreditRegistry {
 
             oracle().log(asset, duration, interest);
         }
+
+        emit Attestation(debtor, asset, duration, principal, hasDefaulted);
     }
 
     function configureCriterion(address asset, Term duration, uint256 criterion) 
