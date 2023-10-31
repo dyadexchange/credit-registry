@@ -32,10 +32,6 @@ interface ICreditRegistry is IDomainObjects {
 
     event Blacklist(address indexed assset);
 
-    event Augment(address indexed entity, uint256 credit);
-
-    event Slash(address indexed entity, uint256 credit);
-
     event SectorListing(bytes32 indexed id, address asset);
 
     event SectorDelisting(bytes32 indexed id, address asset);

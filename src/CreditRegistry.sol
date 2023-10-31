@@ -50,82 +50,57 @@ contract CreditRegistry is ICreditRegistry {
         return _oracle;
     }
 
-    function isWhitelisted(address asset, Term duration) public view returns (bool) {
-        return _markets[asset][duration].whitelist;
+    function constituents(bytes32 id) public view returns (address[] memory) {
+        return _sectors[id].assets;
     }
 
     function criterion(address asset, Term duration) public view returns (uint256) {
         return _markets[asset][duration].criterion;
     }
 
-    function constituents(bytes32 id) public view returns (address[] memory) {
-        return _sectors[id].assets;
+    function isWhitelisted(address asset, Term duration) public view returns (bool) {
+        return _markets[asset][duration].whitelist;
     }
 
-    function recouped(address debtor, address asset) public view returns (uint256) {
-        return _entities[debtor][asset].recouped;
+    function recouped(address debtor, address asset, Term duration) public view returns (uint256) {
+        return _entities[debtor][asset].credit[duration].recouped;
     }
 
-    function defaulted(address debtor, address asset) public view returns (uint256) {
-        return _entities[debtor][asset].defaulted;
+    function defaulted(address debtor, address asset, Term duration) public view returns (uint256) {
+        return _entities[debtor][asset].credit[duration].defaulted;
     }
 
-    function credit(address debtor, address asset) public view returns (uint256) {
-        return _entities[debtor][asset].credit;
-    }
-
-    function attest(address asset, Term duration, uint256 interest) 
-        public 
-        onlyRouter 
+    function credit(address debtor, address asset, Term duration) 
+        public view 
+        returns (uint256, uint256) 
     {
-        oracle().log(asset, duration, interest);
+        uint256 c = criterion(asset, duration);
+        uint256 r = recouped(debtor, asset, duration);
+        uint256 d = defaulted(debtor, asset, duration);
+
+        return((r - (r % c)) / c,  (d - (d % c)) / c);
     }
 
-    function augment(
-        address debtor, 
+    function attest(
         address asset, 
-        Term duration,
-        uint256 principal
+        Term duration, 
+        address debtor,
+        uint256 interest,
+        uint256 principal,
+        bool hasDefaulted
     ) 
         public 
         onlyRouter 
     {
-        Entity storage entity = _entities[debtor][asset];
+        Credit storage rating = _entities[debtor][asset].credit[duration];
 
-        uint256 marketCriterion = criterion(asset, duration);
-        uint256 deltaPrincipalMod = principal % marketCriterion;
-        uint256 deltaPrincipal = principal - deltaPrincipalMod;
-        uint256 deltaCredit = deltaPrincipal / marketCriterion;
+        if (hasDefaulted) {
+            rating.defaulted += principal;
+        } else {
+            rating.recouped += principal;
 
-        entity.credit += deltaCredit;
-        entity.recouped += principal;
-
-        emit Augment(debtor, entity.credit);
-    }
-
-    function slash(
-        address debtor, 
-        address asset, 
-        Term duration,
-        uint256 principal
-    ) 
-        public 
-        onlyRouter 
-    {
-        Entity storage entity = _entities[debtor][asset];
-
-        uint256 marketCriterion = criterion(asset, duration);
-        uint256 deltaPrincipalMod = principal % marketCriterion;
-        uint256 deltaPrincipal = principal - deltaPrincipalMod;
-        uint256 deltaCredit = deltaPrincipal / marketCriterion;
-
-        if (entity.credit >= deltaCredit) {
-            entity.credit -= deltaCredit;
+            oracle().log(asset, duration, interest);
         }
-
-        entity.defaulted += principal;
-
-        emit Slash(debtor, entity.credit);
     }
 
     function configureCriterion(address asset, Term duration, uint256 criterion) 

@@ -62,31 +62,35 @@ contract CreditRegistryTest is Test {
         require(isConstituent && isNotConstituent);
     }
 
-    function testAugmentationAndSlash() public {
+    function testAttestation() public {
         _configureCriterion(MARKET_ADDRESS, 10000 ether);
 
         /*  -------- ROUTER -------- */
         vm.startPrank(ROUTER_ADDRESS); 
-            registry.augment(DEBTOR_ADDRESS, MARKET_ADDRESS, term, 27504 ether);
-            registry.augment(DEBTOR_ADDRESS, MARKET_ADDRESS, term, 10235 ether);
+            registry.attest(MARKET_ADDRESS, term, DEBTOR_ADDRESS, 55 gwei, 27504 ether, false);
         vm.stopPrank();
         /*  ------------------------ */
 
-        uint256 preCredit = registry.credit(DEBTOR_ADDRESS, MARKET_ADDRESS);
+        uint256 preCreditPos;
+        uint256 preCreditNeg;
+
+        (preCreditPos, preCreditNeg) = registry.credit(DEBTOR_ADDRESS, MARKET_ADDRESS, term);
+
+        require(preCreditPos == 2 && preCreditNeg == 0);
 
         /*  -------- ROUTER -------- */
         vm.startPrank(ROUTER_ADDRESS); 
-            registry.slash(DEBTOR_ADDRESS, MARKET_ADDRESS, term, 9000 ether);
-            registry.slash(DEBTOR_ADDRESS, MARKET_ADDRESS, term, 15394 ether);
+            registry.attest(MARKET_ADDRESS, term, DEBTOR_ADDRESS, 124 gwei, 50005 ether, true);
         vm.stopPrank();
         /*  ------------------------ */
 
-        uint256 postCredit = registry.credit(DEBTOR_ADDRESS, MARKET_ADDRESS);
+        uint256 postCreditPos;
+        uint256 postCreditNeg;
 
-        require(preCredit == 3 && postCredit == 2);
+        (postCreditPos, postCreditNeg) = registry.credit(DEBTOR_ADDRESS, MARKET_ADDRESS, term);
+
+        require(postCreditPos == 2 && postCreditNeg == 5);
     }
-
-    function testAttestation() public { }
 
     function _whitelist(address asset) internal {
         /*  ------ CONTROLLER ------ */
