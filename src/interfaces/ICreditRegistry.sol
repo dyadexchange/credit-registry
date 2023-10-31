@@ -3,12 +3,6 @@ pragma solidity ^0.8.13;
 import "@interfaces/IDomainObjects.sol";
 
 interface ICreditRegistry is IDomainObjects {
-    
-    struct Entity {
-        uint256 credit;
-        uint256 recouped;
-        uint256 defaulted;
-    }
 
     struct Market {
         bool whitelist;
@@ -19,6 +13,15 @@ interface ICreditRegistry is IDomainObjects {
         address[] assets;
         mapping(address => uint256) index;
         Term[] durations;
+    }
+    
+    struct Entity {
+        mapping (Term => Credit) credit;
+    }
+
+    struct Credit {
+        uint256 recouped;
+        uint256 defaulted;
     }
 
     error InvalidController();
