@@ -71,7 +71,8 @@ contract CreditRegistry is ICreditRegistry {
     }
 
     function credit(address debtor, address asset, Term duration) 
-        public view 
+        public 
+        view 
         returns (uint256, uint256) 
     {
         uint256 c = criterion(asset, duration);
@@ -92,17 +93,21 @@ contract CreditRegistry is ICreditRegistry {
         public 
         onlyRouter 
     {
-        Credit storage rating = _entities[debtor][asset].credit[duration];
+        bool hasSufficientPrincipal = criterion(asset, duration) <= principal;
 
-        if (hasDefaulted) {
-            rating.defaulted += principal;
-        } else {
-            rating.recouped += principal;
+        if (hasSufficientPrincipal) {
+            Credit storage rating = _entities[debtor][asset].credit[duration];
 
-            oracle().log(asset, duration, interest);
+            if (hasDefaulted) {
+                rating.defaulted += principal;
+            } else {
+                rating.recouped += principal;
+
+                oracle().log(asset, duration, interest);
+            }
+
+            emit Attestation(debtor, asset, duration, principal, hasDefaulted);
         }
-
-        emit Attestation(debtor, asset, duration, principal, hasDefaulted);
     }
 
     function configureCriterion(address asset, Term duration, uint256 criterion) 
