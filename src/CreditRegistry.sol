@@ -93,9 +93,10 @@ contract CreditRegistry is ICreditRegistry {
         public 
         onlyRouter 
     {
+        bool isWhitelistedMarket = isWhitelisted(asset, duration);
         bool hasSufficientPrincipal = criterion(asset, duration) <= principal;
 
-        if (hasSufficientPrincipal) {
+        if (hasSufficientPrincipal && isWhitelistedMarket) {
             Credit storage rating = _entities[debtor][asset].credit[duration];
 
             if (hasDefaulted) {
