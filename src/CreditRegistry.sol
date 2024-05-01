@@ -5,7 +5,6 @@ import { ICreditRegistry } from "@interfaces/ICreditRegistry.sol";
 
 contract CreditRegistry is ICreditRegistry {
 
-    mapping(bytes32 => Sector) _sectors;
     mapping(address => mapping(Term => Market)) _markets;
     mapping(address => mapping(address => Entity)) _entities;
 
@@ -48,10 +47,6 @@ contract CreditRegistry is ICreditRegistry {
 
     function oracle() public view returns (ICreditOracle) {
         return _oracle;
-    }
-
-    function constituents(bytes32 id) public view returns (address[] memory) {
-        return _sectors[id].assets;
     }
 
     function criterion(address asset, Term duration) public view returns (uint256) {
@@ -142,28 +137,6 @@ contract CreditRegistry is ICreditRegistry {
         _oracle = ICreditOracle(oracle);
         
         emit ConfigurationChange(previous, oracle);
-    }
-
-    function push(bytes32 id, address asset) public onlyController {
-        Sector storage sector = _sectors[id];
-
-        sector.index[asset] = sector.assets.length;
-        sector.assets.push(asset);
-
-        emit SectorListing(id, asset);
-    }
-
-    function pull(bytes32 id, address asset) public onlyController {
-        Sector storage sector = _sectors[id];
-
-        uint256 index = sector.index[asset];
-        address replacement = sector.assets[sector.assets.length - 1];
-
-        sector.assets[index] = replacement;
-        sector.index[asset] = index;
-        sector.assets.pop();
-
-        emit SectorDelisting(id, asset);
     }
 
     function whitelist(address asset, Term duration) public onlyController {

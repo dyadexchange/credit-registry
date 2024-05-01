@@ -36,32 +36,6 @@ contract CreditRegistryTest is Test {
         require(isWhitelisted && isBlacklisted);
     }
 
-    function testSectorListing() public {
-        bytes32 sectorId = keccak256(".");
-
-        _push(sectorId, MARKET_ADDRESS);
-
-        address[] memory constituents = registry.constituents(sectorId);
-
-        bool isConstituent;
-
-        for (uint256 x = 0; x < constituents.length; x++) {
-            if (constituents[x] == MARKET_ADDRESS) isConstituent = true;
-        }
-
-        _pull(sectorId, MARKET_ADDRESS);
-
-        constituents = registry.constituents(sectorId);
-
-        bool isNotConstituent = true;
-
-        for (uint256 x = 0; x < constituents.length; x++) {
-            if (constituents[x] == MARKET_ADDRESS) isNotConstituent = false;
-        }
-
-        require(isConstituent && isNotConstituent);
-    }
-
     function testAttestation() public {
         _configureCriterion(MARKET_ADDRESS, 10000 ether);
 
@@ -112,22 +86,6 @@ contract CreditRegistryTest is Test {
         /*  ------ CONTROLLER ------ */
         vm.startPrank(CONTROLLER_ADDRESS);
             registry.configureCriterion(asset, term, criterion);
-        vm.stopPrank();
-        /*  ------------------------ */
-    }
-
-    function _push(bytes32 id, address asset) internal {
-        /*  ------ CONTROLLER ------ */
-        vm.startPrank(CONTROLLER_ADDRESS);
-            registry.push(id, asset);
-        vm.stopPrank();
-        /*  ------------------------ */
-    }
-
-    function _pull(bytes32 id, address asset) internal {
-        /*  ------ CONTROLLER ------ */
-        vm.startPrank(CONTROLLER_ADDRESS);
-            registry.pull(id, asset);
         vm.stopPrank();
         /*  ------------------------ */
     }

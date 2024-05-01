@@ -8,12 +8,6 @@ interface ICreditRegistry is IDomainObjects {
         bool whitelist;
         uint256 criterion;
     }
-
-    struct Sector {
-        address[] assets;
-        mapping(address => uint256) index;
-        Term[] durations;
-    }
     
     struct Entity {
         mapping (Term => Credit) credit;
@@ -31,10 +25,6 @@ interface ICreditRegistry is IDomainObjects {
     event Whitelist(address indexed asset);
 
     event Blacklist(address indexed assset);
-
-    event SectorListing(bytes32 indexed id, address asset);
-
-    event SectorDelisting(bytes32 indexed id, address asset);
 
     event CriterionChange(address indexed asset, uint256 criterion);
 
